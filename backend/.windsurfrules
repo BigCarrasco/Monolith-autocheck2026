@@ -1,0 +1,198 @@
+# Reglas de Proyecto FastAPI con UV
+
+## Estilo de Programación Python
+
+### 1. Mejores Prácticas
+- Usar type hints en todas las funciones y métodos
+- Seguir PEP 8 y PEP 484 (Type Hints)
+- Usar f-strings para formateo de strings
+- Preferir comprehensions sobre loops cuando sea apropiado
+- Usar async/await para operaciones I/O
+
+### 2. Comentarios
+- Comentar cada línea de código explicando:
+  - Su uso específico
+  - La lógica que contiene
+  - Por qué se implementó de esa manera
+- Usar docstrings en funciones, clases y módulos (formato Google o NumPy)
+
+### 3. Estructura de Carpetas
+```
+project/
+├── Core/           # Clases core (DB connections, config, utils)
+├── Models/         # Modelos de datos (Pydantic/SQLAlchemy)
+├── Routers/        # Endpoints de la API
+├── Services/       # Lógica de negocio
+├── Tests/          # Tests unitarios e integración
+├── main.py         # Punto de entrada de la aplicación
+├── pyproject.toml  # Configuración de uv
+└── .env            # Variables de entorno
+```
+
+### 4. Desacoplamiento
+- Usar Dependency Injection de FastAPI
+- Separar lógica de negocio de controladores
+- Interfaces claras entre capas
+- Evitar dependencias circulares
+
+### 5. Detalles de Cambios
+- Al sugerir modificaciones, SIEMPRE mencionar:
+  - Imports nuevos o modificados
+  - Dependencias a instalar con `uv add <paquete>`
+  - Cambios en archivos de configuración
+  - Variables de entorno necesarias
+  - Migraciones de base de datos si aplica
+
+## FastAPI Específico
+
+### 6. Versionamiento de API
+- Usar prefijos de versión: `/api/v1/`, `/api/v2/`
+- Mantener versiones anteriores funcionando
+- Documentar cambios breaking en CHANGELOG.md
+
+### 7. RESTful URLs
+- Usar sustantivos en plural: `/users`, `/products`
+- Métodos HTTP correctos: GET, POST, PUT, PATCH, DELETE
+- Rutas anidadas para relaciones: `/users/{id}/posts`
+
+### 8. Manejo de Errores
+- Usar HTTPException con status codes apropiados
+- Crear excepciones personalizadas cuando sea necesario
+- Incluir mensajes de error claros y útiles
+- Logging de errores con contexto
+
+### 9. Paginación
+- Implementar desde el inicio usando query params:
+  - `?page=1&size=10` o `?limit=10&offset=0`
+- Incluir metadata en respuestas: total, page, pages
+- Usar modelos Pydantic para respuestas paginadas
+
+### 10. Modelos Pydantic
+- Usar `BaseModel` para request/response schemas
+- Validaciones con Field() cuando sea necesario
+- Modelos separados para Create, Update, Response
+- Usar `ConfigDict` (Pydantic v2) en lugar de `Config`
+
+## UV (Package Manager)
+
+### 11. Gestión de Dependencias
+- Instalar paquetes: `uv add <paquete>`
+- Instalar dev dependencies: `uv add --dev <paquete>`
+- Sincronizar entorno: `uv sync`
+- Actualizar lock file: `uv lock`
+
+### 12. Dependencias Comunes
+```bash
+# Core
+uv add fastapi uvicorn[standard]
+
+# Database
+uv add sqlalchemy alembic psycopg2-binary  # PostgreSQL
+# o
+uv add sqlalchemy alembic pymysql  # MySQL
+
+# Pydantic
+uv add "pydantic[email]" pydantic-settings
+
+# Auth
+uv add python-jose[cryptography] passlib[bcrypt] python-multipart
+
+# Utils
+uv add python-dotenv
+
+# Dev
+uv add --dev pytest pytest-asyncio httpx black ruff mypy
+```
+
+### 13. No Usar Métodos Deprecados
+- Verificar siempre la última versión de FastAPI
+- Usar `Annotated` para dependencias (FastAPI 0.95+)
+- Usar `ConfigDict` en Pydantic v2 (no `Config` class)
+- Evitar `orm_mode`, usar `from_attributes=True`
+
+## Ejemplos de Estructura
+
+### Router Example
+```python
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated
+
+# Router con prefijo y tags para documentación
+router = APIRouter(prefix="/api/v1/users", tags=["users"])
+
+@router.get("/")
+async def get_users(
+    # Usar Annotated para dependencias (FastAPI 0.95+)
+    db: Annotated[Session, Depends(get_db)],
+    # Parámetros de paginación
+    page: int = 1,
+    size: int = 10
+):
+    # Implementación
+    pass
+```
+
+### Service Example
+```python
+class UserService:
+    """Servicio para lógica de negocio de usuarios"""
+    
+    def __init__(self, db: Session):
+        # Inyección de dependencias
+        self.db = db
+    
+    async def create_user(self, user_data: UserCreate) -> User:
+        # Lógica de negocio desacoplada del router
+        pass
+```
+
+### Model Example (Pydantic v2)
+```python
+from pydantic import BaseModel, Field, ConfigDict
+
+class UserBase(BaseModel):
+    """Esquema base de usuario"""
+    email: str = Field(..., description="Email del usuario")
+    name: str = Field(..., min_length=1, max_length=100)
+
+class UserCreate(UserBase):
+    """Esquema para crear usuario"""
+    password: str = Field(..., min_length=8)
+
+class UserResponse(UserBase):
+    """Esquema de respuesta de usuario"""
+    id: int
+    
+    # Pydantic v2: usar ConfigDict
+    model_config = ConfigDict(from_attributes=True)
+```
+
+## Testing
+
+### 14. Tests
+- Usar pytest con pytest-asyncio
+- Tests en carpeta `Tests/` con estructura espejo
+- Fixtures para setup/teardown
+- Tests de integración para endpoints completos
+- Usar TestClient de FastAPI
+
+## Comandos Útiles UV
+
+```bash
+# Crear nuevo proyecto
+uv init
+
+# Activar entorno virtual
+source .venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate     # Windows
+
+# Ejecutar aplicación
+uv run uvicorn main:app --reload
+
+# Ejecutar tests
+uv run pytest
+
+# Formatear código
+uv run black .
+uv run ruff check . --fix
+```
