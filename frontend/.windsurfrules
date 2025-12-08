@@ -1,0 +1,869 @@
+# Reglas de Proyecto Frontend - React + Vite + TypeScript
+
+## Contexto del Proyecto
+
+Este archivo `.windsurfrules` está ubicado en la carpeta `frontend/` de un monorepo.
+
+```
+mi-proyecto/                    # Raíz del monorepo
+├── backend/                    # Backend FastAPI
+│   ├── .windsurfrules
+│   ├── pyproject.toml
+│   └── ...
+└── frontend/                   # ⬅️ Este archivo está aquí
+    ├── .windsurfrules         # ⬅️ ESTE ARCHIVO
+    ├── package.json           # Config de npm
+    ├── package-lock.json      # Lock de dependencias
+    └── ...
+```
+
+## Stack Tecnológico
+
+- **Framework**: React 18+ con Vite
+- **Lenguaje**: TypeScript
+- **Estilos**: TailwindCSS
+- **HTTP Client**: Axios
+- **Gestión de Estado**: React Hooks (useState, useContext, useReducer)
+- **Routing**: React Router DOM
+
+## Estilo de Programación
+
+### 1. TypeScript Obligatorio
+- **Siempre usar TypeScript**, nunca JavaScript plano
+- Tipar todas las props, states, funciones y respuestas de API
+- Evitar `any` - usar tipos específicos o `unknown` si es necesario
+- Crear interfaces para objetos complejos
+
+```typescript
+// ✅ CORRECTO
+interface User {
+  id: number;
+  email: string;
+  full_name: string | null;
+  is_active: boolean;
+}
+
+const [user, setUser] = useState<User | null>(null);
+
+// ❌ INCORRECTO
+const [user, setUser] = useState<any>(null);
+```
+
+### 2. Comentarios
+- Comentar la lógica compleja o no obvia
+- Agregar JSDoc a funciones y componentes importantes
+- Explicar el "por qué", no el "qué" (el código debe ser auto-explicativo)
+
+```typescript
+/**
+ * Hook personalizado para manejar autenticación de usuario.
+ * Persiste el token en localStorage y lo remueve al logout.
+ * 
+ * @returns Objeto con usuario actual y funciones de auth
+ */
+export const useAuth = () => {
+  // ...
+}
+```
+
+### 3. Estructura de Carpetas del Frontend
+
+```
+frontend/
+├── public/                     # Archivos estáticos
+│   └── vite.svg
+│
+├── src/
+│   ├── main.tsx               # Entry point de la aplicación
+│   ├── App.tsx                # Componente principal con routes
+│   ├── index.css              # Estilos globales y Tailwind imports
+│   │
+│   ├── components/            # Componentes reutilizables
+│   │   ├── ui/               # Componentes UI básicos (Button, Input, Card)
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   └── Card.tsx
+│   │   ├── layout/           # Componentes de layout (Navbar, Footer, Sidebar)
+│   │   │   ├── Navbar.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   └── Layout.tsx
+│   │   └── forms/            # Componentes de formularios
+│   │       └── LoginForm.tsx
+│   │
+│   ├── pages/                 # Páginas/Views de la aplicación
+│   │   ├── Home.tsx
+│   │   ├── Login.tsx
+│   │   ├── Dashboard.tsx
+│   │   └── NotFound.tsx
+│   │
+│   ├── services/              # Llamadas a la API backend
+│   │   ├── api.ts            # Configuración de Axios
+│   │   ├── auth.service.ts   # Servicios de autenticación
+│   │   └── user.service.ts   # Servicios de usuarios
+│   │
+│   ├── hooks/                 # Custom hooks de React
+│   │   ├── useAuth.ts        # Hook de autenticación
+│   │   └── useApi.ts         # Hook para llamadas API
+│   │
+│   ├── types/                 # Tipos e interfaces de TypeScript
+│   │   ├── user.types.ts     # Tipos relacionados con usuarios
+│   │   └── api.types.ts      # Tipos de respuestas API
+│   │
+│   ├── utils/                 # Funciones utilitarias
+│   │   ├── formatters.ts     # Formateo de datos (fechas, moneda, etc)
+│   │   └── validators.ts     # Validaciones de formularios
+│   │
+│   ├── context/               # React Context para estado global
+│   │   └── AuthContext.tsx   # Context de autenticación
+│   │
+│   └── constants/             # Constantes de la aplicación
+│       └── config.ts          # Configuración (API_URL, etc)
+│
+├── .env                       # Variables de entorno (NO commitear)
+├── .env.example               # Template de variables
+├── .gitignore
+├── .windsurfrules             # Este archivo
+├── index.html                 # HTML principal
+├── package.json               # Dependencias y scripts
+├── package-lock.json          # Lock file
+├── postcss.config.js          # Config de PostCSS para Tailwind
+├── tailwind.config.js         # Config de TailwindCSS
+├── tsconfig.json              # Config de TypeScript
+├── tsconfig.node.json         # Config de TS para Node
+├── vite.config.ts             # Config de Vite
+└── README.md
+```
+
+### 4. Componentes de React
+
+#### Usar Functional Components con Hooks
+```typescript
+// ✅ CORRECTO: Functional component con TypeScript
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+  disabled?: boolean;
+}
+
+export const Button: React.FC<ButtonProps> = ({ 
+  label, 
+  onClick, 
+  variant = 'primary',
+  disabled = false 
+}) => {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`px-4 py-2 rounded ${
+        variant === 'primary' 
+          ? 'bg-blue-500 text-white' 
+          : 'bg-gray-200 text-gray-800'
+      }`}
+    >
+      {label}
+    </button>
+  );
+};
+
+// ❌ INCORRECTO: Class component (no usar)
+class Button extends React.Component {
+  // No usar class components en código nuevo
+}
+```
+
+#### Nombrar componentes en PascalCase
+```typescript
+// ✅ CORRECTO
+export const UserProfile = () => { ... }
+export const LoginForm = () => { ... }
+
+// ❌ INCORRECTO
+export const userProfile = () => { ... }
+export const login_form = () => { ... }
+```
+
+#### Un componente por archivo
+```
+// ✅ CORRECTO
+components/
+  ├── Button.tsx
+  ├── Input.tsx
+  └── Card.tsx
+
+// ❌ INCORRECTO
+components/
+  └── AllComponents.tsx  // Todos los componentes juntos
+```
+
+### 5. Manejo de Estado
+
+#### useState para estado local
+```typescript
+// Estado simple
+const [count, setCount] = useState<number>(0);
+
+// Estado de objeto
+const [user, setUser] = useState<User | null>(null);
+
+// Estado de array
+const [users, setUsers] = useState<User[]>([]);
+
+// Estado de loading y error
+const [loading, setLoading] = useState<boolean>(false);
+const [error, setError] = useState<string | null>(null);
+```
+
+#### useContext para estado global
+```typescript
+// context/AuthContext.tsx
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Funciones de login/logout
+  const login = async (email: string, password: string) => {
+    // Lógica de login
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Hook para usar el context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+};
+```
+
+### 6. Servicios de API con Axios
+
+#### Configuración de Axios
+```typescript
+// services/api.ts
+import axios from 'axios';
+
+// Obtener URL de la API desde variables de entorno
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// Crear instancia de Axios con configuración base
+export const api = axios.create({
+  baseURL: `${API_URL}/api/v1`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor para agregar token a todas las requests
+api.interceptors.request.use(
+  (config) => {
+    // Obtener token de localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Agregar token al header Authorization
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor para manejar errores de respuesta
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Si el error es 401 Unauthorized, redirigir a login
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+```
+
+#### Servicios específicos
+```typescript
+// services/user.service.ts
+import { api } from './api';
+import { User, UserCreate, UserUpdate } from '../types/user.types';
+
+export const userService = {
+  /**
+   * Obtener todos los usuarios con paginación
+   */
+  getAll: async (page: number = 1, size: number = 10): Promise<User[]> => {
+    const response = await api.get<User[]>('/users', {
+      params: { page, size }
+    });
+    return response.data;
+  },
+
+  /**
+   * Obtener un usuario por ID
+   */
+  getById: async (id: number): Promise<User> => {
+    const response = await api.get<User>(`/users/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Crear nuevo usuario
+   */
+  create: async (userData: UserCreate): Promise<User> => {
+    const response = await api.post<User>('/users', userData);
+    return response.data;
+  },
+
+  /**
+   * Actualizar usuario existente
+   */
+  update: async (id: number, userData: UserUpdate): Promise<User> => {
+    const response = await api.patch<User>(`/users/${id}`, userData);
+    return response.data;
+  },
+
+  /**
+   * Eliminar usuario
+   */
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/users/${id}`);
+  },
+};
+```
+
+#### Servicio de autenticación
+```typescript
+// services/auth.service.ts
+import { api } from './api';
+import { User } from '../types/user.types';
+
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
+
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export const authService = {
+  /**
+   * Login de usuario
+   * Guarda el token en localStorage
+   */
+  login: async (credentials: LoginCredentials): Promise<string> => {
+    // FastAPI OAuth2 espera form data
+    const formData = new FormData();
+    formData.append('username', credentials.email);
+    formData.append('password', credentials.password);
+
+    const response = await api.post<LoginResponse>('/auth/login', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    const { access_token } = response.data;
+    
+    // Guardar token en localStorage
+    localStorage.setItem('token', access_token);
+    
+    return access_token;
+  },
+
+  /**
+   * Obtener usuario actual desde el token
+   */
+  getCurrentUser: async (): Promise<User> => {
+    const response = await api.get<User>('/users/me');
+    return response.data;
+  },
+
+  /**
+   * Logout de usuario
+   */
+  logout: () => {
+    localStorage.removeItem('token');
+  },
+};
+```
+
+### 7. Tipos de TypeScript
+
+```typescript
+// types/user.types.ts
+
+// Tipo base de usuario (lo que viene del backend)
+export interface User {
+  id: number;
+  email: string;
+  full_name: string | null;
+  is_active: boolean;
+}
+
+// Tipo para crear usuario (sin id, con password)
+export interface UserCreate {
+  email: string;
+  full_name?: string;
+  password: string;
+}
+
+// Tipo para actualizar usuario (todos opcionales)
+export interface UserUpdate {
+  email?: string;
+  full_name?: string;
+  password?: string;
+}
+
+// Tipo para respuesta paginada
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pages: number;
+  size: number;
+}
+```
+
+```typescript
+// types/api.types.ts
+
+// Tipo para errores de API
+export interface ApiError {
+  detail: string;
+  status?: number;
+}
+
+// Tipo para estado de loading
+export interface LoadingState {
+  loading: boolean;
+  error: string | null;
+}
+```
+
+### 8. Custom Hooks
+
+```typescript
+// hooks/useApi.ts
+import { useState, useEffect } from 'react';
+
+interface UseApiState<T> {
+  data: T | null;
+  loading: boolean;
+  error: string | null;
+}
+
+/**
+ * Hook personalizado para llamadas a API
+ * Maneja automáticamente loading y errores
+ */
+export const useApi = <T>(
+  apiFunction: () => Promise<T>,
+  dependencies: any[] = []
+): UseApiState<T> => {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Función para ejecutar la llamada API
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await apiFunction();
+        setData(result);
+      } catch (err: any) {
+        setError(err.response?.data?.detail || 'Error al cargar datos');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, dependencies);
+
+  return { data, loading, error };
+};
+```
+
+Uso del hook:
+```typescript
+// En un componente
+const UserList: React.FC = () => {
+  const { data: users, loading, error } = useApi(() => userService.getAll());
+
+  if (loading) return <div>Cargando...</div>;
+  if (error) return <div>Error: {error}</div>;
+  
+  return (
+    <div>
+      {users?.map(user => (
+        <div key={user.id}>{user.email}</div>
+      ))}
+    </div>
+  );
+};
+```
+
+### 9. TailwindCSS - Buenas Prácticas
+
+#### Usar clases utilitarias
+```typescript
+// ✅ CORRECTO: Usar clases de Tailwind
+<button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+  Click me
+</button>
+
+// ❌ INCORRECTO: CSS inline
+<button style={{ backgroundColor: 'blue', color: 'white' }}>
+  Click me
+</button>
+```
+
+#### Crear componentes reutilizables para estilos complejos
+```typescript
+// components/ui/Button.tsx
+interface ButtonProps {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'danger';
+  onClick?: () => void;
+}
+
+export const Button: React.FC<ButtonProps> = ({ 
+  children, 
+  variant = 'primary',
+  onClick 
+}) => {
+  // Clases base para todos los botones
+  const baseClasses = 'px-4 py-2 rounded font-medium transition-colors';
+  
+  // Clases según variante
+  const variantClasses = {
+    primary: 'bg-blue-500 hover:bg-blue-600 text-white',
+    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-800',
+    danger: 'bg-red-500 hover:bg-red-600 text-white',
+  };
+
+  return (
+    <button 
+      className={`${baseClasses} ${variantClasses[variant]}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+};
+```
+
+#### Responsive design
+```typescript
+// Usar prefijos de Tailwind para responsive
+<div className="
+  w-full           // Ancho completo en móvil
+  md:w-1/2         // 50% de ancho en tablet
+  lg:w-1/3         // 33% de ancho en desktop
+  p-4              // Padding en todos los tamaños
+  md:p-6           // Más padding en tablet+
+">
+  Contenido
+</div>
+```
+
+### 10. Routing con React Router
+
+```typescript
+// App.tsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Layout } from './components/layout/Layout';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import NotFound from './pages/NotFound';
+
+// Componente para rutas protegidas
+const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Cargando...</div>;
+  }
+
+  return user ? <>{children}</> : <Navigate to="/login" />;
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Rutas públicas */}
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="login" element={<Login />} />
+            
+            {/* Rutas protegidas */}
+            <Route
+              path="dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+          </Route>
+
+          {/* Ruta 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
+
+export default App;
+```
+
+### 11. Variables de Entorno
+
+```bash
+# .env (NO commitear este archivo)
+VITE_API_URL=http://localhost:8000
+
+# .env.example (template para otros desarrolladores)
+VITE_API_URL=http://localhost:8000
+```
+
+```typescript
+// constants/config.ts
+// Acceder a variables de entorno
+export const CONFIG = {
+  API_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  IS_DEV: import.meta.env.DEV,
+  IS_PROD: import.meta.env.PROD,
+};
+```
+
+### 12. Manejo de Formularios
+
+```typescript
+// pages/Login.tsx
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+
+const Login: React.FC = () => {
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    // Prevenir reload de la página
+    e.preventDefault();
+    
+    // Resetear error
+    setError(null);
+    setLoading(true);
+
+    try {
+      // Intentar login
+      await login(email, password);
+      // Redirigir a dashboard
+      navigate('/dashboard');
+    } catch (err: any) {
+      // Mostrar error
+      setError(err.response?.data?.detail || 'Error al iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="tu@email.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Contraseña</label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="••••••••"
+            />
+          </div>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded">
+              {error}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
+```
+
+### 13. Detalles de Cambios - SIEMPRE MENCIONAR
+
+Al sugerir modificaciones, SIEMPRE especificar:
+
+✅ **Imports nuevos:**
+```typescript
+// Mencionar si se agregan imports
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+```
+
+✅ **Dependencias a instalar:**
+```bash
+# Especificar comandos completos
+npm install react-router-dom
+npm install axios
+npm install -D @types/node
+```
+
+✅ **Archivos nuevos o modificados:**
+- Listar todos los archivos que se crean
+- Mencionar cambios en archivos existentes
+
+✅ **Variables de entorno:**
+```bash
+# Agregar al .env
+VITE_API_URL=http://localhost:8000
+```
+
+✅ **Configuración de Tailwind:**
+```javascript
+// Si se usan plugins o configuración custom en tailwind.config.js
+```
+
+## Comandos Útiles
+
+```bash
+# Instalar dependencias
+npm install
+
+# Ejecutar en desarrollo
+npm run dev
+
+# Build para producción
+npm run build
+
+# Preview de build
+npm run preview
+
+# Linting (si se configura ESLint)
+npm run lint
+
+# Formateo (si se configura Prettier)
+npm run format
+```
+
+## Dependencias Iniciales
+
+```bash
+# Dependencias principales
+npm install react-router-dom axios
+
+# Dependencias de desarrollo
+npm install -D @types/node
+
+# TailwindCSS (si no está instalado)
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+```
+
+## Configuración Inicial de TailwindCSS
+
+```javascript
+// tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+```
+
+```css
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+## Mejores Prácticas Generales
+
+1. **Componentes pequeños y reutilizables**
+2. **Separar lógica de presentación** (hooks para lógica, componentes para UI)
+3. **Tipar todo con TypeScript**
+4. **Manejar loading y errores** en todas las llamadas API
+5. **Usar TailwindCSS** para estilos consistentes
+6. **Crear servicios** para todas las llamadas al backend
+7. **Proteger rutas** que requieren autenticación
+8. **Guardar token** en localStorage (o mejor: httpOnly cookies)
+9. **Validar formularios** antes de enviar al backend
+10. **Mostrar feedback** al usuario (loading, success, error)

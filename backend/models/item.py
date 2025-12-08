@@ -14,7 +14,7 @@ from typing import Optional
 # Modelo base (puede ser usado como DTO)
 class ItemBase(SQLModel):
     name: str
-    price: float
+    price: float = 0.0  # Por defecto es 0.0 si no se especifica
 
 # Modelo para crear (sin ID)
 class ItemCreate(ItemBase):
